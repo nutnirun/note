@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>เกมเรียงโน้ตดนตรีไทย</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mitr:wght@400;500&family=Sarabun:wght@400;600&display=swap">
+<style>
+:root{--bg:#f1f4ee;--card:#fff;--ink:#14213d;--mut:#5b6478;--gold:#b07d0a;--ok:#1f8a5b;--bad:#c0392b;--line:#d9dfd0;--hd:#14213d;--hdi:#f6e7b4;--slot:#e7ecdf;--tile:#14213d;--tilei:#f6e7b4;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1526;--card:#18223a;--ink:#f1ead6;--mut:#a4adc4;--gold:#e3b73f;--ok:#4cc38a;--bad:#ff7a6b;--line:#2c3856;--hd:#070c18;--slot:#101a30;--tile:#e3b73f;--tilei:#14213d}}
+:root[data-theme="dark"]{--bg:#0e1526;--card:#18223a;--ink:#f1ead6;--mut:#a4adc4;--gold:#e3b73f;--ok:#4cc38a;--bad:#ff7a6b;--line:#2c3856;--hd:#070c18;--slot:#101a30;--tile:#e3b73f;--tilei:#14213d}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:Sarabun,"Noto Sans Thai",sans-serif;font-size:17px;line-height:1.5}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--hd);z-index:10}
+header{background:var(--hd);color:var(--hdi);padding:14px 18px;border-bottom:4px solid var(--gold)}
+h1{font:500 1.5rem/1.3 Mitr,sans-serif;margin:0}
+header p{margin:2px 0 0;opacity:.8;font-size:.95rem}
+main{max-width:760px;margin:0 auto;padding:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:12px}
+.top{display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;font-weight:600}
+.task{font:500 1.25rem/1.4 Mitr,sans-serif;margin:8px 0 2px}
+.dir{display:flex;justify-content:space-between;color:var(--mut);font-size:.9rem;margin-top:10px}
+.row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:6px 0}
+.slot{width:62px;height:76px;border:2px dashed var(--line);border-radius:12px;background:var(--slot);display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative}
+.slot.hot{border-color:var(--gold);border-style:solid}
+.slot.ok{border:2px solid var(--ok)}
+.slot.bad{border:2px solid var(--bad)}
+.slot.lock{background:var(--card);border-style:solid}
+.slot small{position:absolute;bottom:3px;font-size:.78rem;color:var(--mut)}
+#tray{min-height:84px;border:2px dashed var(--line);border-radius:12px;padding:8px}
+#tray.hot{border-color:var(--gold)}
+.tile{width:54px;height:64px;border-radius:10px;background:var(--tile);color:var(--tilei);font:500 1.9rem Mitr,sans-serif;display:flex;align-items:center;justify-content:center;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none}
+.tile.sel{outline:4px solid var(--gold);outline-offset:2px}
+.tile.fix{background:transparent;color:var(--ink);cursor:default;touch-action:auto}
+.ghost{position:fixed;z-index:50;pointer-events:none;opacity:.9;transform:translate(-50%,-50%) scale(1.1)}
+.drag{opacity:.3}
+.btn{font:600 1rem Sarabun,sans-serif;border:0;border-radius:10px;padding:11px 20px;cursor:pointer;background:var(--gold);color:#fff}
+.btn:disabled{opacity:.45;cursor:default}
+.btn.alt{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+button:focus-visible,.tile:focus-visible,.slot:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.acts{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:12px}
+#msg{text-align:center;font-weight:600;min-height:1.6em;margin-top:10px}
+.big{font:500 2.6rem Mitr,sans-serif;color:var(--gold);text-align:center}
+.hide{display:none!important}
+.note{color:var(--mut);font-size:.9rem;text-align:center}
+@media(max-width:480px){.slot{width:44px;height:64px}.tile{width:44px;height:56px;font-size:1.6rem}.row{gap:5px}}
+</style>
+</head>
+<body>
+<header><h1>เกมเรียงโน้ตดนตรีไทย</h1><p>ลากตัวโน้ตไปวางในช่องให้ถูกลำดับ</p></header>
+<main>
+<div id="play">
+  <div class="card">
+    <div class="top"><span id="rd"></span><span id="st"></span></div>
+    <div class="task" id="task"></div>
+    <div class="dir"><span id="d1"></span><span id="d2"></span></div>
+    <div class="row" id="slots"></div>
+  </div>
+  <div class="card">
+    <div class="note">ตัวโน้ตที่ยังไม่ได้วาง</div>
+    <div class="row" id="tray"></div>
+    <div id="msg" role="status"></div>
+    <div class="acts">
+      <button class="btn" id="chk" disabled>ตรวจคำตอบ</button>
+      <button class="btn hide" id="nxt">ข้อต่อไป</button>
+    </div>
+  </div>
+  <p class="note">ลากตัวโน้ตไปวางในช่อง หรือแตะตัวโน้ตแล้วแตะช่องที่ต้องการ ลากกลับมาที่กล่องด้านล่างเพื่อเอาออกได้</p>
+</div>
+<div id="fin" class="card hide">
+  <div class="note">คะแนนรวม</div>
+  <div class="big" id="tot"></div>
+  <div class="acts"><button class="btn" id="again">เล่นอีกครั้ง</button></div>
+</div>
+</main>
+<script>
+const N=["ด","ร","ม","ฟ","ซ","ล","ท"],S=["โด","เร","มี","ฟา","ซอล","ลา","ที"];
+const ROUNDS=[
+ {dir:"up",k:7,t:"เรียงตัวโน้ตให้ครบทั้ง 7 ตัว"},
+ {dir:"down",k:7,t:"เรียงตัวโน้ตให้ครบทั้ง 7 ตัว"},
+ {dir:"up",k:3,t:"เติมตัวโน้ตที่หายไป"},
+ {dir:"down",k:4,t:"เติมตัวโน้ตที่หายไป"},
+ {dir:"up",k:5,t:"เติมตัวโน้ตที่หายไป"},
+];
+const $=id=>document.getElementById(id);
+let r=0,exp=[],slots=[],lock=[],tray=[],tries=0,stars=[],sel=null,done=false;
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function start(){r=0;stars=[];load()}
+function load(){
+  const R=ROUNDS[r];
+  exp=R.dir==="up"?[0,1,2,3,4,5,6]:[6,5,4,3,2,1,0];
+  const blank=new Set(shuffle([0,1,2,3,4,5,6]).slice(0,R.k));
+  slots=exp.map((n,i)=>blank.has(i)?null:n);
+  lock=exp.map((n,i)=>!blank.has(i));
+  tray=shuffle(exp.filter((n,i)=>blank.has(i)));
+  tries=0;sel=null;done=false;
+  $("play").classList.remove("hide");$("fin").classList.add("hide");
+  $("rd").textContent="ด่านที่ "+(r+1)+" จาก "+ROUNDS.length;
+  $("task").textContent=R.t;
+  $("d1").textContent=R.dir==="up"?"เสียงต่ำ":"เสียงสูง";
+  $("d2").textContent=R.dir==="up"?"เสียงสูง":"เสียงต่ำ";
+  $("msg").textContent="";$("nxt").classList.add("hide");$("chk").classList.remove("hide");
+  render();
+}
+function tileHTML(n,from,cls){return '<div class="tile '+(cls||"")+'" data-n="'+n+'" data-from="'+from+'" tabindex="0">'+N[n]+'</div>'}
+function render(mark){
+  $("st").textContent="★ ".repeat(0)+"ดาวที่ได้ "+stars.reduce((a,b)=>a+b,0);
+  $("slots").innerHTML=slots.map((n,i)=>{
+    let c="slot"+(lock[i]?" lock":"")+(mark&&mark[i]?" "+mark[i]:"");
+    let inner=n===null?"":tileHTML(n,i,lock[i]?"fix":"");
+    const sm=(done&&n!==null)?"<small>"+S[n]+"</small>":"";
+    return '<div class="'+c+'" data-slot="'+i+'">'+inner+sm+'</div>';
+  }).join("");
+  $("tray").innerHTML=tray.map(n=>tileHTML(n,"t","")).join("");
+  $("chk").disabled=done||slots.some(x=>x===null);
+  if(sel!==null){document.querySelectorAll(".tile").forEach(t=>{if(t.dataset.n==sel.n&&t.dataset.from==sel.from)t.classList.add("sel")})}
+}
+function move(n,from,to){ // from: "t" or index; to: "t" or index
+  if(from===to)return;
+  if(from!=="t")slots[from]=null;else tray.splice(tray.indexOf(n),1);
+  if(to==="t"){tray.push(n)}
+  else{const old=slots[to];if(old!==null)tray.push(old);slots[to]=n}
+  sel=null;$("msg").textContent="";render();
+}
+// pointer drag + tap
+let drag=null;
+document.addEventListener("pointerdown",e=>{
+  const t=e.target.closest(".tile");
+  if(!t||t.classList.contains("fix")||done)return;
+  drag={t,n:+t.dataset.n,from:t.dataset.from==="t"?"t":+t.dataset.from,x:e.clientX,y:e.clientY,moving:false,g:null};
+  t.setPointerCapture&&t.setPointerCapture(e.pointerId);
+});
+document.addEventListener("pointermove",e=>{
+  if(!drag)return;
+  if(!drag.moving&&Math.hypot(e.clientX-drag.x,e.clientY-drag.y)>7){
+    drag.moving=true;const g=drag.t.cloneNode(true);g.className="tile ghost";document.body.appendChild(g);drag.g=g;drag.t.classList.add("drag");
+  }
+  if(drag.moving){
+    drag.g.style.left=e.clientX+"px";drag.g.style.top=e.clientY+"px";
+    document.querySelectorAll(".hot").forEach(x=>x.classList.remove("hot"));
+    const o=document.elementFromPoint(e.clientX,e.clientY);const tg=o&&o.closest("[data-slot],#tray");
+    if(tg&&!(tg.dataset.slot!==undefined&&lock[+tg.dataset.slot]))tg.classList.add("hot");
+  }
+});
+document.addEventListener("pointerup",e=>{
+  if(!drag)return;
+  const d=drag;drag=null;
+  document.querySelectorAll(".hot").forEach(x=>x.classList.remove("hot"));
+  if(d.g)d.g.remove();
+  if(d.moving){
+    d.t.classList.remove("drag");
+    const o=document.elementFromPoint(e.clientX,e.clientY);const tg=o&&o.closest("[data-slot],#tray");
+    if(!tg)return;
+    if(tg.id==="tray")return move(d.n,d.from,"t");
+    const i=+tg.dataset.slot;if(lock[i])return;
+    move(d.n,d.from,i);
+  }else{
+    sel=(sel&&sel.n===d.n&&sel.from===d.from)?null:{n:d.n,from:d.from};render();
+  }
+});
+document.addEventListener("pointercancel",()=>{if(drag){if(drag.g)drag.g.remove();drag.t.classList.remove("drag");drag=null}});
+// tap-to-place
+$("slots").addEventListener("click",e=>{
+  if(!sel||done||e.target.closest(".tile"))return;
+  const s=e.target.closest("[data-slot]");if(!s)return;
+  const i=+s.dataset.slot;if(lock[i])return;
+  move(sel.n,sel.from,i);
+});
+$("tray").addEventListener("click",e=>{
+  if(!sel||done||e.target.closest(".tile"))return;
+  if(sel.from!=="t")move(sel.n,sel.from,"t");
+});
+$("chk").onclick=()=>{
+  tries++;
+  const mark=slots.map((n,i)=>lock[i]?"":(n===exp[i]?"ok":"bad"));
+  const wrong=mark.filter(m=>m==="bad").length;
+  if(wrong===0){
+    done=true;const s=tries===1?3:tries===2?2:1;stars.push(s);
+    $("msg").textContent="ถูกต้อง ได้ "+"★".repeat(s);
+    $("chk").classList.add("hide");$("nxt").classList.remove("hide");
+    $("nxt").textContent=r===ROUNDS.length-1?"ดูคะแนน":"ข้อต่อไป";
+    render(mark);
+  }else{
+    $("msg").textContent="ยังผิด "+wrong+" ช่อง ตัวโน้ตที่ผิดจะกลับไปที่กล่อง ลองใหม่";
+    render(mark);
+    setTimeout(()=>{
+      slots.forEach((n,i)=>{if(!lock[i]&&n!==null&&n!==exp[i]){tray.push(n);slots[i]=null}});
+      render();
+    },1100);
+  }
+};
+$("nxt").onclick=()=>{
+  if(r<ROUNDS.length-1){r++;load()}
+  else{
+    $("play").classList.add("hide");$("fin").classList.remove("hide");
+    $("tot").textContent=stars.reduce((a,b)=>a+b,0)+" / "+(ROUNDS.length*3)+" ดาว";
+  }
+};
+$("again").onclick=start;
+start();
+</script>
+</body>
+</html>
